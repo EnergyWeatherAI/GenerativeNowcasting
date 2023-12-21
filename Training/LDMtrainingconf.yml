@@ -1,0 +1,75 @@
+ID: 'SHADECast' # insert your model ID
+seed: 0
+Dataset:
+  data_path: 'path to your dataset'
+  n_in: 4
+  n_out: 8
+  batch_size: 4
+  num_workers: 24
+  train_length: 100
+  val_length: 100
+  norm_method: 'rescaling'
+  min: 0.05
+  max: 1.2
+  mean: 0.6
+  std: 0.3
+  get_t: True
+
+Encoder:
+  in_dim: 1
+  levels: 2
+  min_ch: 64
+  max_ch: 128
+
+Decoder: # not used at the moment (symmetrical architecture)
+  in_dim: 1
+  levels: 2
+  min_ch: 64
+  max_ch: 128
+
+VAE:
+  path: 'path to your pre trained autoencoder'
+  hidden_width: 32
+  opt_patience: 5
+
+Nowcaster:
+  embed_dim: 256
+  forecast_depth: 4
+  analysis_depth: 4
+  input_steps: 1
+  output_steps: 2
+  opt_patience: 5
+  loss_type: 'latent'
+  cascade_depth: 3
+  path: 'path to your pre trained nowcaster otherwise None will train the nowcaster with the diffusion model'
+
+Diffusion:
+  model_channels: 256
+  lr: 0.0001
+  noise_steps: 1000
+  scheduler: 'linear'
+  use_ema: True
+  opt_patience: 5
+  num_res_blocks: 2
+  attention_resolutions: [1, 2]
+  dims: 3
+  channel_mult: [1, 2, 2]
+
+EarlyStopping:
+  patience: 10
+
+Checkpoint:
+  dirpath: 
+  filename: 
+  monitor: 'val_loss_ema'
+  every_n_epochs: 1
+  save_top_k: 3
+
+Trainer:
+  accelerator: 'gpu'
+  precision: 16
+  devices: 1
+  max_epochs: 1000
+  strategy: 'ddp'
+  accumulate_grad_batches: 1
+  resume_training: 

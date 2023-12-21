@@ -1,0 +1,37 @@
+ID: 'IN2'
+Dataset:
+  data_path: '/scratch/snx3000/acarpent/HelioMontDataset/'
+  n_in: 4
+  n_out: 8
+  batch_size: 10
+  num_workers: 24
+  train_length: 
+  val_length:
+  norm_method: 'rescaling'
+  min: 0.05
+  max: 1.2
+  mean: 0.6
+  std: 0.3
+
+
+Nowcaster:
+  opt_patience: 5
+ 
+EarlyStopping:
+  patience: 10
+
+Checkpoint:
+  dirpath: '/scratch/snx3000/acarpent/NowcasterTrainingLogs/'
+  filename: '{epoch}-{val_loss:.5f}'
+  monitor: 'val_loss'
+  every_n_epochs: 1
+  save_top_k: 3
+
+Trainer:
+  accelerator: 'gpu'
+  precision: 16
+  devices: 1
+  max_epochs: 1000
+  strategy: 'ddp'
+  accumulate_grad_batches: 2
+  resume_training: '/scratch/snx3000/acarpent/NowcasterTrainingLogs/IN2_epoch=70-val_loss=0.08601.ckpt'

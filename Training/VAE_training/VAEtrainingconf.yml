@@ -1,0 +1,48 @@
+ID: 'VAE7-CF=2-l=12'
+Dataset:
+  data_path: '/scratch/snx3000/acarpent/HelioMontDataset/'
+  n_steps: 12
+  batch_size: 32
+  num_workers: 24
+  train_length:
+  val_length:
+  norm_method: 'rescaling'
+  min: 0.05
+  max: 1.2
+  mean: 0.6
+  std: 0.3
+
+Encoder:
+  in_dim: 1
+  levels: 2
+  min_ch: 64
+  max_ch: 128
+
+Decoder: # not used at the moment (symmetrical architecture)
+  in_dim: 1
+  levels: 2
+  min_ch: 64
+  max_ch: 128
+
+VAE:
+  kl_weight: 0.01
+  hidden_width: 32 # arbitrary value
+  opt_patience: 5
+
+EarlyStopping:
+  patience: 10
+
+Checkpoint:
+  dirpath: '/scratch/snx3000/acarpent/VAETrainingLogs'
+  filename: '{epoch}-{val_rec_loss:.5f}-{val_kl_loss:.5f}'
+  monitor: 'val_rec_loss'
+  every_n_epochs: 1
+  save_top_k: 3
+
+Trainer:
+  accelerator: 'gpu'
+  devices: 1
+  max_epochs: 1000
+  strategy: 'ddp'
+  precision: 16
+  resume_training:

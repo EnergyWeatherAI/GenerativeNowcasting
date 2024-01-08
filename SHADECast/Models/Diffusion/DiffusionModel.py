@@ -14,8 +14,7 @@ import numpy as np
 import pytorch_lightning as pl
 from contextlib import contextmanager
 from functools import partial
-from pytorch_adapt.layers.mmd_loss import MMDBatchedLoss
-from mmd_loss import MMD_loss
+
 
 from Models.Diffusion.utils import make_beta_schedule, extract_into_tensor, noise_like, timestep_embedding
 from Models.Diffusion.ema import LitEma

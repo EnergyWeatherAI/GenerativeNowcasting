@@ -1,3 +1,9 @@
+import torch
+import numpy as np
+from tqdm import tqdm
+from Models.Sampler.utils import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
+
+
 """
 From: https://github.com/CompVis/latent-diffusion/blob/main/ldm/models/diffusion/plms.py
 """
@@ -8,7 +14,7 @@ From: https://github.com/CompVis/latent-diffusion/blob/main/ldm/models/diffusion
 import torch
 import numpy as np
 from tqdm import tqdm
-from Models.Sampler.utils import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
+
 from Models.Diffusion.utils import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
 
 

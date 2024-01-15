@@ -10,10 +10,10 @@ from yaml import load, Loader
 from torchinfo import summary
 import os
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-import sys
+
 from utils import save_pkl
 from Dataset.dataset import KIDataset
-from SHADECast.Models.Nowcaster.Nowcast import AFNONowcastNetCascade, Nowcaster, AFNONowcastNet
+from SHADECast.Models.Nowcaster.CondNowcaster import CAFNONowcastNetCascade, ConditionedNowcaster, CAFNONowcastNet, CoordEncoder
 from SHADECast.Models.VAE.VariationalAutoEncoder import VAE, Encoder, Decoder
 from SHADECast.Models.UNet.UNet import UNetModel
 from SHADECast.Models.Diffusion.DiffusionModel import LatentDiffusion
@@ -30,8 +30,7 @@ def get_dataloader(data_path,
                    num_workers=24,
                    batch_size=64,
                    shuffle=True,
-                   validation=False,
-                   return_t=False):
+                   validation=False):
     dataset = KIDataset(data_path=data_path,
                         n=n,
                         min=min,
@@ -39,10 +38,9 @@ def get_dataloader(data_path,
                         length=length,
                         norm_method=norm_method,
                         coordinate_data_path=coordinate_data_path,
-                        return_all=False,
+                        return_all=True,
                         forecast=True,
-                        validation=validation,
-                        return_t=return_t)
+                        validation=validation)
     dataloader = DataLoader(dataset,
                             num_workers=num_workers,
                             batch_size=batch_size,
@@ -90,46 +88,43 @@ def train(config, distributed=True):
     nowcaster_config = config['Nowcaster']
     print(nowcaster_config['path'])
     if nowcaster_config['path'] is None:
-        nowcast_net = AFNONowcastNet(vae,
-                                     train_autoenc=False,
-                                     embed_dim=nowcaster_config['embed_dim'],
-                                     embed_dim_out=nowcaster_config['embed_dim'],
-                                     analysis_depth=nowcaster_config['analysis_depth'],
-                                     forecast_depth=nowcaster_config['forecast_depth'],
-                                     input_steps=nowcaster_config['input_steps'],
-                                     output_steps=nowcaster_config['output_steps'],
-                                    #  opt_patience=nowcaster_config['opt_patience'],
-                                    #  loss_type=nowcaster_config['loss_type']
-        )
+        nowcast_net = CAFNONowcastNet(vae,
+                                      train_autoenc=False,
+                                      embed_dim=nowcaster_config['embed_dim'],
+                                      embed_dim_out=nowcaster_config['embed_dim'],
+                                      analysis_depth=nowcaster_config['analysis_depth'],
+                                      forecast_depth=nowcaster_config['forecast_depth'],
+                                      input_steps=nowcaster_config['input_steps'],
+                                      output_steps=nowcaster_config['output_steps'])
+                                     
         train_nowcast = True 
     else:
-        nowcast_net = AFNONowcastNet(vae,
-                                     train_autoenc=False,
-                                     embed_dim=nowcaster_config['embed_dim'],
-                                     embed_dim_out=nowcaster_config['embed_dim'],
-                                     analysis_depth=nowcaster_config['analysis_depth'],
-                                     forecast_depth=nowcaster_config['forecast_depth'],
-                                     input_steps=nowcaster_config['input_steps'],
-                                     output_steps=nowcaster_config['output_steps'],
-                                    #  opt_patience=nowcaster_config['opt_patience'],
-                                    #  loss_type=nowcaster_config['loss_type']
-        )
-        nowcaster = Nowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
-                                                   opt_patience=nowcaster_config['opt_patience'],
-                                                   loss_type=nowcaster_config['loss_type'])
+        nowcast_net = CAFNONowcastNet(vae,
+                                      train_autoenc=False,
+                                      embed_dim=nowcaster_config['embed_dim'],
+                                      embed_dim_out=nowcaster_config['embed_dim'],
+                                      analysis_depth=nowcaster_config['analysis_depth'],
+                                      forecast_depth=nowcaster_config['forecast_depth'],
+                                      input_steps=nowcaster_config['input_steps'],
+                                      output_steps=nowcaster_config['output_steps'])
+
+        nowcaster = ConditionedNowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
+                                                              opt_patience=nowcaster_config['opt_patience'],
+                                                              loss_type=nowcaster_config['loss_type'])
         nowcast_net = nowcaster.nowcast_net
         train_nowcast = False
     
     print('Nowcaster built, train: ', nowcaster_config['path'])
-    cascade_net = AFNONowcastNetCascade(nowcast_net=nowcast_net, 
-                                        cascade_depth=nowcaster_config['cascade_depth'],
-                                        train_net=train_nowcast)
+
+
+    context_encoder = CoordEncoder(in_dim=3, levels=2, min_ch=64, max_ch=128)
+    cascade_net = CAFNONowcastNetCascade(nowcast_net=nowcast_net, 
+                                         context_encoder=context_encoder,
+                                         cascade_depth=nowcaster_config['cascade_depth'],
+                                         train_net=train_nowcast)
     if rank == 0:
         summary(nowcast_net)
-    # if nowcaster_config['path'] is not None:
-    #     nowcaster = Nowcaster.load_from_checkpoint(nowcaster_config['path'],
-    #                                                nowcast_net=nowcast_net,
-    #                                                autoencoder=vae)
+   
     if rank == 0:
         print('Nowcaster built')
 
@@ -160,7 +155,6 @@ def train(config, distributed=True):
                           lr=diffusion_config['lr'],
                           timesteps=diffusion_config['noise_steps'],
                           opt_patience=diffusion_config['opt_patience'],
-                          get_t=config['Dataset']['get_t'],
                           )
     if rank == 0:
         print('All models built')
@@ -190,7 +184,8 @@ def train(config, distributed=True):
         precision=tr_config['precision'],
         enable_progress_bar=(rank == 0),
         deterministic=False,
-        accumulate_grad_batches=tr_config['accumulate_grad_batches']
+        accumulate_grad_batches=tr_config['accumulate_grad_batches'],
+        # detect_anomaly=True
     )
     if rank == 0:
         print('Trainer built')
@@ -217,12 +212,10 @@ def train(config, distributed=True):
                                     norm_method=data_config['norm_method'],
                                     batch_size=data_config['batch_size'],
                                     shuffle=False,
-                                    validation=True,
-                                    return_t=data_config['get_t'])
+                                    validation=True)
     if rank == 0:
         print('Training started')
     resume_training = tr_config['resume_training']
-    torch.cuda.empty_cache()
     if resume_training is None:
         trainer.fit(ldm, train_dataloader, val_dataloader)
     else:
@@ -234,12 +227,11 @@ def train(config, distributed=True):
 
 
 if __name__ == '__main__':
-    with open(config_path,
-              'r') as o:
+    with open(config_path, 'r') as o:
         config = load(o, Loader)
+    
     print(config)
     seed = config['seed']
     if seed is not None:
         seed_everything(int(seed), workers=True)
-
     train(config)

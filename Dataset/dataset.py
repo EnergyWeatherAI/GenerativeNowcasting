@@ -60,8 +60,8 @@ class KIDataset(Dataset):
         item_dict = open_pkl(self.data_path + item_idx)
 
         starting_idx = np.random.choice(item_dict['starting_idx'], 1, replace=False)[0]
-        if self.validation:
-            print(idx, starting_idx)
+        # if self.validation:
+        #     print(idx, starting_idx)
         seq = np.array(item_dict['ki_maps'])[starting_idx:starting_idx + self.n]
         seq = seq.reshape(1, *seq.shape)
 

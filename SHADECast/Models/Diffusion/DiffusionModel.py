@@ -169,7 +169,7 @@ class LatentDiffusion(pl.LightningModule):
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):
         if self.get_t:
-            t = torch.tensor(batch[-1], dtype=torch.int8)
+            t = torch.tensor(batch[-1], dtype=torch.int64)
             batch = batch[:-1]
         log_params = {"on_step": False, "on_epoch": True, "prog_bar": True, "sync_dist": True}
         loss = self.shared_step(batch, t)

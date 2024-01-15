@@ -58,7 +58,7 @@ class KIDataset(Dataset):
                 t = int(self.t_lst[idx])
         coord_idx = int(item_idx.split('_')[1].split('.')[0])
         item_dict = open_pkl(self.data_path + item_idx)
-
+        
         starting_idx = np.random.choice(item_dict['starting_idx'], 1, replace=False)[0]
         # if self.validation:
         #     print(idx, starting_idx)
@@ -82,7 +82,11 @@ class KIDataset(Dataset):
             alt = alt.reshape(1, 1, *alt.shape)
             c = np.concatenate((alt, lon, lat), axis=0)
             if self.forecast:
-                return self.to_tensor(seq[:, :4]), self.to_tensor(seq[:, 4:]), self.to_tensor(c)
+                if self.return_t:
+                    return self.to_tensor(seq[:, :4]), self.to_tensor(seq[:, 4:]), self.to_tensor(c), t
+                else:
+                    return self.to_tensor(seq[:, :4]), self.to_tensor(seq[:, 4:]), self.to_tensor(c)
+                
             
             else:
                 return self.to_tensor(seq), self.to_tensor(c)

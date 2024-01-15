@@ -10,10 +10,10 @@ from yaml import load, Loader
 from torchinfo import summary
 import os
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-
+import sys
 from utils import save_pkl
 from Dataset.dataset import KIDataset
-from SHADECast.Models.Nowcaster.CondNowcaster import CAFNONowcastNetCascade, ConditionedNowcaster, CAFNONowcastNet, CoordEncoder
+from SHADECast.Models.Nowcaster.Nowcast import CAFNONowcastNetCascade, Nowcaster, AFNONowcastNet, ContextEncoder
 from SHADECast.Models.VAE.VariationalAutoEncoder import VAE, Encoder, Decoder
 from SHADECast.Models.UNet.UNet import UNetModel
 from SHADECast.Models.Diffusion.DiffusionModel import LatentDiffusion
@@ -29,6 +29,7 @@ def get_dataloader(data_path,
                    norm_method='rescaling',
                    num_workers=24,
                    batch_size=64,
+                   return_t=True,
                    shuffle=True,
                    validation=False):
     dataset = KIDataset(data_path=data_path,
@@ -38,6 +39,7 @@ def get_dataloader(data_path,
                         length=length,
                         norm_method=norm_method,
                         coordinate_data_path=coordinate_data_path,
+                        return_t=return_t,
                         return_all=True,
                         forecast=True,
                         validation=validation)
@@ -88,36 +90,36 @@ def train(config, distributed=True):
     nowcaster_config = config['Nowcaster']
     print(nowcaster_config['path'])
     if nowcaster_config['path'] is None:
-        nowcast_net = CAFNONowcastNet(vae,
-                                      train_autoenc=False,
-                                      embed_dim=nowcaster_config['embed_dim'],
-                                      embed_dim_out=nowcaster_config['embed_dim'],
-                                      analysis_depth=nowcaster_config['analysis_depth'],
-                                      forecast_depth=nowcaster_config['forecast_depth'],
-                                      input_steps=nowcaster_config['input_steps'],
-                                      output_steps=nowcaster_config['output_steps'])
+        nowcast_net = AFNONowcastNet(vae,
+                                     train_autoenc=False,
+                                     embed_dim=nowcaster_config['embed_dim'],
+                                     embed_dim_out=nowcaster_config['embed_dim'],
+                                     analysis_depth=nowcaster_config['analysis_depth'],
+                                     forecast_depth=nowcaster_config['forecast_depth'],
+                                     input_steps=nowcaster_config['input_steps'],
+                                     output_steps=nowcaster_config['output_steps'])
                                      
         train_nowcast = True 
     else:
-        nowcast_net = CAFNONowcastNet(vae,
-                                      train_autoenc=False,
-                                      embed_dim=nowcaster_config['embed_dim'],
-                                      embed_dim_out=nowcaster_config['embed_dim'],
-                                      analysis_depth=nowcaster_config['analysis_depth'],
-                                      forecast_depth=nowcaster_config['forecast_depth'],
-                                      input_steps=nowcaster_config['input_steps'],
-                                      output_steps=nowcaster_config['output_steps'])
+        nowcast_net = AFNONowcastNet(vae,
+                                     train_autoenc=False,
+                                     embed_dim=nowcaster_config['embed_dim'],
+                                     embed_dim_out=nowcaster_config['embed_dim'],
+                                     analysis_depth=nowcaster_config['analysis_depth'],
+                                     forecast_depth=nowcaster_config['forecast_depth'],
+                                     input_steps=nowcaster_config['input_steps'],
+                                     output_steps=nowcaster_config['output_steps'])
 
-        nowcaster = ConditionedNowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
-                                                              opt_patience=nowcaster_config['opt_patience'],
-                                                              loss_type=nowcaster_config['loss_type'])
+        nowcaster = Nowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
+                                                   opt_patience=nowcaster_config['opt_patience'],
+                                                   loss_type=nowcaster_config['loss_type'])
         nowcast_net = nowcaster.nowcast_net
         train_nowcast = False
     
     print('Nowcaster built, train: ', nowcaster_config['path'])
 
 
-    context_encoder = CoordEncoder(in_dim=3, levels=2, min_ch=64, max_ch=128)
+    context_encoder = ContextEncoder(in_dim=3, levels=2, min_ch=64, max_ch=128)
     cascade_net = CAFNONowcastNetCascade(nowcast_net=nowcast_net, 
                                          context_encoder=context_encoder,
                                          cascade_depth=nowcaster_config['cascade_depth'],
@@ -155,6 +157,7 @@ def train(config, distributed=True):
                           lr=diffusion_config['lr'],
                           timesteps=diffusion_config['noise_steps'],
                           opt_patience=diffusion_config['opt_patience'],
+                          get_t=config['Dataset']['get_t'],
                           )
     if rank == 0:
         print('All models built')
@@ -199,6 +202,7 @@ def train(config, distributed=True):
                                       num_workers=data_config['num_workers'],
                                       norm_method=data_config['norm_method'],
                                       batch_size=data_config['batch_size'],
+                                      return_t=False,
                                       shuffle=True,
                                       validation=False)
 
@@ -211,6 +215,7 @@ def train(config, distributed=True):
                                     num_workers=data_config['num_workers'],
                                     norm_method=data_config['norm_method'],
                                     batch_size=data_config['batch_size'],
+                                    return_t=True,
                                     shuffle=False,
                                     validation=True)
     if rank == 0:

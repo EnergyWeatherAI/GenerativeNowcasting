@@ -13,10 +13,10 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 from utils import save_pkl
 from Dataset.dataset import KIDataset
-from Models.Nowcaster.Nowcast import AFNONowcastNetCascade, Nowcaster, AFNONowcastNet
-from Models.VAE.VariationalAutoEncoder import VAE, Encoder, Decoder
-from Models.UNet.UNet import UNetModel
-from Models.Diffusion.DiffusionModel import LatentDiffusion
+from SHADECast.Models.Nowcaster.Nowcast import AFNONowcastNetCascade, Nowcaster, AFNONowcastNet
+from SHADECast.Models.VAE.VariationalAutoEncoder import VAE, Encoder, Decoder
+from SHADECast.Models.UNet.UNet import UNetModel
+from SHADECast.Models.Diffusion.DiffusionModel import LatentDiffusion
 
 
 def get_dataloader(data_path,

@@ -5,8 +5,8 @@ from torch.utils.data import DataLoader
 from yaml import load, Loader
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 # from pytorch_lightning import seed_everything
-from Models.VAE.VariationalAutoEncoder import Encoder, Decoder, VAE
-from Models.Nowcaster.Nowcast import AFNONowcastNet, Nowcaster
+from SHADECast.Models.VAE.VariationalAutoEncoder import Encoder, Decoder, VAE
+from SHADECast.Models.Nowcaster.Nowcast import AFNONowcastNet, Nowcaster
 from Dataset.dataset import KIDataset
 from utils import save_pkl
 

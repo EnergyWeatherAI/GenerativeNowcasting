@@ -4,9 +4,9 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 
-from Blocks.attention import TemporalTransformer
-from Blocks.AFNO import AFNOBlock3d, AFNOCrossAttentionBlock3d
-from Blocks.ResBlock3D import ResBlock3D, ResBlock2D
+from SHADECast.Blocks.attention import TemporalTransformer
+from SHADECast.Blocks.AFNO import AFNOBlock3d, AFNOCrossAttentionBlock3d
+from SHADECast.Blocks.ResBlock3D import ResBlock3D, ResBlock2D
 import numpy as np
 
 

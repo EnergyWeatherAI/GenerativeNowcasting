@@ -5,6 +5,7 @@ import torch
 import os
 import numpy as np
 from torch.nn import AvgPool3d
+import xarray as xr
 
 
 class KIDataset(Dataset):
@@ -183,4 +184,39 @@ class HRKIDataset(Dataset):
 
     def __len__(self):
         return self.nitems
+
+    
+class SatDataset(Dataset):
+    def __init__(self,
+                    zarr_path,
+                    seq_len,
+                    train):
+        self.seq_len = seq_len
+        self.dataset = xr.open_dataset(zarr_path,
+                                    engine="zarr", 
+                                    chunks="auto",)
+        self.data_array = self.dataset['data']
+        self.starting_idx = self.find_starting_points(train)
+        
+    def find_starting_points(self,
+                             train):
+        time = self.data_array.time.values
+        diff = (time[self.seq_len:] - time[:-self.seq_len]).astype('timedelta64[m]').astype(np.float16)
+        starting_idx = np.where(diff==15*self.seq_len)[0]
+        if train:
+            end = int(len(starting_idx)*.8)
+            return starting_idx[:end]
+        else:
+            end = int(len(starting_idx)*.8)
+            return starting_idx[end:]
+    
+    def __len__(self):
+        return len(self.starting_idx)
+    
+    def __getitem__(self, idx):
+        start = self.starting_idx[idx]
+        x_start = np.random.randint(0, 800-128, 1)[0]
+        y_start = np.random.randint(0, 500-128, 1)[0]
+        arr = self.data_array[start:start+self.seq_len, y_start:y_start+128, x_start:x_start+128].values
+        return torch.Tensor(arr*2-1)
 

@@ -190,12 +190,19 @@ class SatDataset(Dataset):
     def __init__(self,
                     zarr_path,
                     seq_len,
-                    train):
+                    train,
+                    non_idx_path='/scratch/snx3000/acarpent/EumetsatData/non_idx.pkl'):
         self.seq_len = seq_len
         self.dataset = xr.open_dataset(zarr_path,
-                                    engine="zarr", 
-                                    chunks="auto",)
+                                       engine="zarr", 
+                                       chunks="auto",)
         self.data_array = self.dataset['data']
+        if non_idx_path is not None:
+            non_idx_lst = set(open_pkl(non_idx_path))
+            idx_lst = set(np.arange(len(self.data_array)))
+            idx_lst = list(idx_lst.difference(non_idx_lst))
+            self.data_array = self.data_array[idx_lst]
+        
         self.starting_idx = self.find_starting_points(train)
         
     def find_starting_points(self,
@@ -218,5 +225,5 @@ class SatDataset(Dataset):
         x_start = np.random.randint(0, 800-128, 1)[0]
         y_start = np.random.randint(0, 500-128, 1)[0]
         arr = self.data_array[start:start+self.seq_len, y_start:y_start+128, x_start:x_start+128].values
-        return torch.Tensor(arr*2-1)
+        return torch.Tensor(arr*2-1).permute(-1,0,1,2)
 

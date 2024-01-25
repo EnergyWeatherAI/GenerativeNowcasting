@@ -3,11 +3,12 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import numpy as np
 from SHADECast.Blocks.ResBlock3D import ResBlock3D
+from SHADECast.Blocks.AFNO import AFNOBlock3d
 from utils import sample_from_standard_normal, kl_from_standard_normal
 
 
 class Encoder(nn.Sequential):
-    def __init__(self, in_dim=1, levels=2, min_ch=64, max_ch=64):
+    def __init__(self, in_dim=1, levels=2, min_ch=64, max_ch=64, afno=False):
         sequence = []
         channels = np.hstack((in_dim, np.arange(1, (levels + 1)) * min_ch))
         channels[channels > max_ch] = max_ch
@@ -21,6 +22,13 @@ class Encoder(nn.Sequential):
                 norm_kwargs={"num_groups": 1}
             )
             sequence.append(res_block)
+            if afno:
+                afno_block = AFNOBlock3d(
+                    out_channels, 
+                    mlp_ratio=2*i, 
+                    num_blocks=16, 
+                    data_format='channels_first')
+                sequence.append(afno_block)
             downsample = nn.Conv3d(out_channels, out_channels,
                                    kernel_size=(2, 2, 2), stride=(2, 2, 2))
             sequence.append(downsample)
@@ -29,7 +37,7 @@ class Encoder(nn.Sequential):
 
 
 class Decoder(nn.Sequential):
-    def __init__(self, in_dim=1, levels=2, min_ch=64, max_ch=64):
+    def __init__(self, in_dim=1, levels=2, min_ch=64, max_ch=64, afno=False):
         sequence = []
         channels = np.hstack((in_dim, np.arange(1, (levels + 1)) * min_ch))
         channels[channels > max_ch] = max_ch
@@ -39,6 +47,15 @@ class Decoder(nn.Sequential):
             upsample = nn.ConvTranspose3d(in_channels, in_channels,
                                           kernel_size=(2, 2, 2), stride=(2, 2, 2))
             sequence.append(upsample)
+            
+            if afno:
+                afno_block = AFNOBlock3d(
+                    in_channels, 
+                    mlp_ratio=2*i,
+                    num_blocks=16, 
+                    data_format='channels_first')
+                sequence.append(afno_block)
+            
             res_kernel_size = (3, 3, 3) if (i == 0) else (1, 3, 3)
             res_block = ResBlock3D(
                 in_channels, out_channels,

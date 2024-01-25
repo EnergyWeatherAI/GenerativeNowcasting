@@ -188,10 +188,15 @@ class HRKIDataset(Dataset):
     
 class SatDataset(Dataset):
     def __init__(self,
-                    zarr_path,
-                    seq_len,
-                    train,
-                    non_idx_path='/scratch/snx3000/acarpent/EumetsatData/non_idx.pkl'):
+                 zarr_path,
+                 seq_len,
+                 train,
+                 integration_order=0,
+                 length=25000,
+                 field_size=128,
+                 non_idx_path='/scratch/snx3000/acarpent/EumetsatData/non_idx.pkl'):
+        self.integration_order = integration_order
+        self.field_size = field_size
         self.seq_len = seq_len
         self.dataset = xr.open_dataset(zarr_path,
                                        engine="zarr", 
@@ -204,26 +209,37 @@ class SatDataset(Dataset):
             self.data_array = self.data_array[idx_lst]
         
         self.starting_idx = self.find_starting_points(train)
-        
+        if length is not None:
+            self.starting_idx = np.random.choice(self.starting_idx, length, replace=False)
+    
     def find_starting_points(self,
                              train):
         time = self.data_array.time.values
         diff = (time[self.seq_len:] - time[:-self.seq_len]).astype('timedelta64[m]').astype(np.float16)
         starting_idx = np.where(diff==15*self.seq_len)[0]
+        # if train is not None:
         if train:
             end = int(len(starting_idx)*.8)
             return starting_idx[:end]
         else:
             end = int(len(starting_idx)*.8)
             return starting_idx[end:]
+        # else:
+        #     return starting_idx
     
     def __len__(self):
         return len(self.starting_idx)
     
     def __getitem__(self, idx):
         start = self.starting_idx[idx]
-        x_start = np.random.randint(0, 800-128, 1)[0]
-        y_start = np.random.randint(0, 500-128, 1)[0]
-        arr = self.data_array[start:start+self.seq_len, y_start:y_start+128, x_start:x_start+128].values
-        return torch.Tensor(arr*2-1).permute(-1,0,1,2)
+        x_start = np.random.randint(0, 800-self.field_size, 1)[0]
+        y_start = np.random.randint(0, 500-self.field_size, 1)[0]
+        arr = self.data_array[start:start+self.seq_len, y_start:y_start+self.field_size, x_start:x_start+self.field_size].values
+        if self.integration_order > 0:
+            x = arr[self.integration_order:] - arr[:-self.integration_order]
+        else:
+            x = arr
+        if np.isnan(x).any():
+            print('input is nan!')
+        return torch.Tensor(x*2-1).permute(-1,0,1,2)
 

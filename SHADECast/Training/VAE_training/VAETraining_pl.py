@@ -131,7 +131,7 @@ def train(config):
 
 
 if __name__ == '__main__':
-    with open('/scratch/snx3000/acarpent/GenerativeNowcasting/Training/VAE_training/VAEtrainingconf.yml', 'r') as o:
+    with open('VAEtrainingconf.yml', 'r') as o:
         config = load(o, Loader)
 
     # seed_everything(0, workers=0)

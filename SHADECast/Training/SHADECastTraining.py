@@ -233,7 +233,7 @@ def train(config, distributed=True):
 
 
 if __name__ == '__main__':
-    with open('/scratch/snx3000/acarpent/GenerativeNowcasting/Training/LDMtrainingconf.yml',
+    with open('SHADECastTrainingconf.yml',
               'r') as o:
         config = load(o, Loader)
     seed = config['seed']

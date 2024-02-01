@@ -168,7 +168,7 @@ def train(config, distributed=True):
 
 
 if __name__ == '__main__':
-    with open('/scratch/snx3000/acarpent/GenerativeNowcasting/Training/Nowcast_training/Nowcastertrainingconf.yml',
+    with open('Training/Nowcast_training/Nowcastertrainingconf.yml',
               'r') as o:
         config = load(o, Loader)
 

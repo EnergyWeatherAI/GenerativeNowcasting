@@ -1,11 +1,10 @@
 from Dataset.dataset import KIDataset
 from torch.utils.data import DataLoader
-from Models.Nowcaster.Nowcast import AFNONowcastNetCascade, Nowcaster, AFNONowcastNet, CAFNONowcastNetCascade, ContextEncoder
-from Models.Nowcaster.HighResNowcast import HRNowcaster, HRAFNONowcastNet
+from SHADECast.Models.Nowcaster.Nowcast import AFNONowcastNetCascade, Nowcaster, AFNONowcastNet, CAFNONowcastNetCascade, ContextEncoder
 
-from Models.VAE.VariationalAutoEncoder import VAE, Encoder, Decoder
-from Models.UNet.UNet import UNetModel
-from Models.Diffusion.DiffusionModel import LatentDiffusion
+from SHADECast.Models.VAE.VariationalAutoEncoder import VAE, Encoder, Decoder
+from SHADECast.Models.UNet.UNet import UNetModel
+from SHADECast.Models.Diffusion.DiffusionModel import LatentDiffusion
 from utils import open_pkl, save_pkl
 
 def get_dataloader(data_path,

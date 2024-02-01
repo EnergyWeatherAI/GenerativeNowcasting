@@ -36,7 +36,7 @@ def get_dataloader(data_path,
     return dataloader, dataset
 
 
-def get_diffusion_model(config_path, ldm_path, coord=False, high_res=False, nowcaster_path=None):
+def get_diffusion_model(config_path, ldm_path):
     
     config = open_pkl(config_path)
     encoder_config = config['Encoder']
@@ -61,59 +61,34 @@ def get_diffusion_model(config_path, ldm_path, coord=False, high_res=False, nowc
 
     print('VAE built')
 
-    if nowcaster_path is None:
-        nowcaster_config = config['Nowcaster']
-        if nowcaster_config['path'] is None:
-            nowcast_net = AFNONowcastNet(vae,
-                                        train_autoenc=False,
-                                        embed_dim=nowcaster_config['embed_dim'],
-                                        embed_dim_out=nowcaster_config['embed_dim'],
-                                        analysis_depth=nowcaster_config['analysis_depth'],
-                                        forecast_depth=nowcaster_config['forecast_depth'],
-                                        input_steps=nowcaster_config['input_steps'],
-                                        output_steps=nowcaster_config['output_steps'],
-            )
-        else:
-            nowcast_net = AFNONowcastNet(vae,
-                                        train_autoenc=False,
-                                        embed_dim=nowcaster_config['embed_dim'],
-                                        embed_dim_out=nowcaster_config['embed_dim'],
-                                        analysis_depth=nowcaster_config['analysis_depth'],
-                                        forecast_depth=nowcaster_config['forecast_depth'],
-                                        input_steps=nowcaster_config['input_steps'],
-                                        output_steps=nowcaster_config['output_steps'],
-            )
-            nowcaster = Nowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
-                                                    opt_patience=nowcaster_config['opt_patience'],
-                                                    loss_type=nowcaster_config['loss_type'])
-            nowcast_net = nowcaster.nowcast_net
+    nowcaster_config = config['Nowcaster']
+    if nowcaster_config['path'] is None:
+        nowcast_net = AFNONowcastNet(vae,
+                                    train_autoenc=False,
+                                    embed_dim=nowcaster_config['embed_dim'],
+                                    embed_dim_out=nowcaster_config['embed_dim'],
+                                    analysis_depth=nowcaster_config['analysis_depth'],
+                                    forecast_depth=nowcaster_config['forecast_depth'],
+                                    input_steps=nowcaster_config['input_steps'],
+                                    output_steps=nowcaster_config['output_steps'],
+        )
     else:
-        if high_res:
-            nowcast_net = HRAFNONowcastNet(vae,
-                                           train_autoenc=False,
-                                           embed_dim=nowcaster_config['embed_dim'],
-                                           embed_dim_out=nowcaster_config['embed_dim'],
-                                           analysis_depth=nowcaster_config['analysis_depth'],
-                                           forecast_depth=nowcaster_config['forecast_depth'],
-                                           input_steps=nowcaster_config['input_steps'],
-                                           output_steps=nowcaster_config['output_steps'],
-                                           afno_res_mult=2,
-            )
-            nowcaster = HRNowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
-                                                         opt_patience=nowcaster_config['opt_patience'],
-                                                         loss_type=nowcaster_config['loss_type'])
-            nowcast_net = nowcaster.nowcast_net
-
-
-    if coord:
-        context_encoder = ContextEncoder(in_dim=3, levels=2, min_ch=64, max_ch=128)
-        cascade_net = CAFNONowcastNetCascade(nowcast_net=nowcast_net, 
-                                             context_encoder=context_encoder,
-                                             cascade_depth=nowcaster_config['cascade_depth'])
+        nowcast_net = AFNONowcastNet(vae,
+                                    train_autoenc=False,
+                                    embed_dim=nowcaster_config['embed_dim'],
+                                    embed_dim_out=nowcaster_config['embed_dim'],
+                                    analysis_depth=nowcaster_config['analysis_depth'],
+                                    forecast_depth=nowcaster_config['forecast_depth'],
+                                    input_steps=nowcaster_config['input_steps'],
+                                    output_steps=nowcaster_config['output_steps'],
+        )
+        nowcaster = Nowcaster.load_from_checkpoint(nowcaster_config['path'], nowcast_net=nowcast_net,
+                                                opt_patience=nowcaster_config['opt_patience'],
+                                                loss_type=nowcaster_config['loss_type'])
+        nowcast_net = nowcaster.nowcast_net
     
-    else:
-        cascade_net = AFNONowcastNetCascade(nowcast_net=nowcast_net, 
-                                            cascade_depth=nowcaster_config['cascade_depth'])
+    cascade_net = AFNONowcastNetCascade(nowcast_net=nowcast_net, 
+                                        cascade_depth=nowcaster_config['cascade_depth'])
     diffusion_config = config['Diffusion']
     denoiser = UNetModel(
             in_channels=vae.hidden_width,

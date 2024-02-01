@@ -5,7 +5,7 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 
 from SHADECast.Blocks.attention import TemporalTransformer, positional_encoding
-from SHADECast.Blocks.AFNO import AFNOBlock3d, AFNOCrossAttentionBlock3d
+from SHADECast.Blocks.AFNO import AFNOBlock3d
 from SHADECast.Blocks.ResBlock3D import ResBlock3D
 import numpy as np
 
@@ -265,105 +265,6 @@ class AFNONowcastNetCascade(nn.Module):
         for i in range(self.cascade_depth - 1):
             x = F.avg_pool3d(x, (1, 2, 2))
             x = self.resnet[i](x)
-            img_shape = tuple(x.shape[-2:])
-            cascade[img_shape] = x
-        return cascade
-
-
-class ContextEncoder(nn.Sequential):
-    def __init__(self, in_dim=1, levels=2, min_ch=64, max_ch=64):
-        self.ch = max_ch
-        
-        sequence = []
-        channels = np.hstack((in_dim, np.arange(1, (levels + 1)) * min_ch))
-        
-        channels[channels > max_ch] = max_ch
-        print(channels)
-        self.embed_dim_out = channels[-1]
-        for i in range(levels):
-            in_channels = int(channels[i])
-            out_channels = int(channels[i + 1])
-            res_kernel_size = (1, 3, 3)
-            res_block = ResBlock3D(
-                in_channels, out_channels,
-                kernel_size=res_kernel_size,
-                norm_kwargs={"num_groups": 1}
-            )
-            sequence.append(res_block)
-            downsample = nn.Conv3d(out_channels, out_channels,
-                                   kernel_size=(1, 2, 2), stride=(1, 2, 2))
-            sequence.append(downsample)
-
-        super().__init__(*sequence)
-
-
-class CAFNONowcastNetCascade(nn.Module):
-    def __init__(self,
-                 nowcast_net,
-                 context_encoder,
-                 cascade_depth=4,
-                 mul=2,
-                 train_net=False):
-        super().__init__()
-        self.cascade_depth = cascade_depth
-        self.nowcast_net = nowcast_net
-        self.context_encoder = context_encoder
-        if isinstance(mul, int):
-            self.mul = [mul for i in range(cascade_depth-1)]
-        elif isinstance(mul, list) or isinstance(mul, tuple):
-            self.mul = mul[:cascade_depth]
-        else:
-            raise Exception("mul can be int or list")
-        
-        # freeze nowcaster parameters
-        for p in self.nowcast_net.parameters():
-            p.requires_grad = train_net
-        
-        # build conditioning res nets (one for the deterministic forecast and one for geolocalization features)
-        self.forecast_resnet = nn.ModuleList()
-        self.coord_resnet = nn.ModuleList()
-        
-        ch = self.nowcast_net.embed_dim_out
-        coord_ch = self.context_encoder.embed_dim_out
-        
-        self.cascade_dims = [ch]
-        self.coord_cascade_dims = [coord_ch]
-        self.cross_afno_nets = nn.ModuleList([AFNOCrossAttentionBlock3d(ch, coord_ch, data_format="channels_first")])
-        self.mixing_nets = nn.ModuleList([ResBlock3D(ch, ch, kernel_size=(1, 1, 1), norm=None)])
-        for i in range(cascade_depth - 1):
-            ch_out = self.mul[i] * ch
-            coord_ch_out = self.mul[i] * coord_ch
-            self.cascade_dims.append(ch_out)
-            
-            self.forecast_resnet.append(
-                ResBlock3D(ch, ch_out, kernel_size=(1, 3, 3), norm=None)
-            )
-            self.coord_resnet.append(
-                ResBlock3D(coord_ch, coord_ch_out, kernel_size=(1, 3, 3), norm='group')
-            )
-            self.mixing_nets.append(
-                ResBlock3D(ch_out, ch_out, kernel_size=(1, 1, 1), norm=None)
-            )
-            self.cross_afno_nets.append(AFNOCrossAttentionBlock3d(ch_out, coord_ch_out, data_format="channels_first"))
-            ch = ch_out
-            coord_ch = coord_ch_out
-        
-    def forward(self, x, c):
-        x = self.nowcast_net.latent_forward(x)
-        c = self.context_encoder(c)
-        c = torch.cat([c, c], axis=2)
-        img_shape = tuple(x.shape[-2:])
-        x = self.cross_afno_nets[0](x, c)
-        x = self.mixing_nets[0](x)
-        
-        cascade = {img_shape: x}
-        for i in range(self.cascade_depth  - 1):
-            x = F.avg_pool3d(x, (1, 2, 2))
-            c = F.avg_pool3d(c, (1, 2, 2))
-            x = self.forecast_resnet[i](x)
-            c = self.coord_resnet[i](c)
-            x = self.cross_afno_nets[i+1](x, c)
-            x = self.mixing_nets[i+1](x)
             img_shape = tuple(x.shape[-2:])
             cascade[img_shape] = x
         return cascade

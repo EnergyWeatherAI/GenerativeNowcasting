@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn.utils.parametrizations import spectral_norm as sn
-from SHADECast.utils import activation, normalization
+from utils import activation, normalization
 
 
 class ResBlock3D(nn.Module):

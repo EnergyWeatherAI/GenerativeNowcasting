@@ -16,8 +16,8 @@ from contextlib import contextmanager
 from functools import partial
 
 
-from Models.Diffusion.utils import make_beta_schedule, extract_into_tensor, noise_like, timestep_embedding
-from Models.Diffusion.ema import LitEma
+from SHADECast.Models.Diffusion.utils import make_beta_schedule, extract_into_tensor, noise_like, timestep_embedding
+from SHADECast.Models.Diffusion.ema import LitEma
 
 
 class LatentDiffusion(pl.LightningModule):

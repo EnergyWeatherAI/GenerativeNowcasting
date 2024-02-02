@@ -21,7 +21,7 @@ EarlyStopping:
   patience: 10
 
 Checkpoint:
-  dirpath: '/scratch/snx3000/acarpent/NowcasterTrainingLogs/'
+  dirpath: '/scratch/snx3000/acarpent/Logs/SHADECast/NowcasterTrainingLogs/'
   filename: '{epoch}-{val_loss:.5f}'
   monitor: 'val_loss'
   every_n_epochs: 1
@@ -33,5 +33,5 @@ Trainer:
   devices: 1
   max_epochs: 1000
   strategy: 'ddp'
-  accumulate_grad_batches: 2
-  resume_training: '/scratch/snx3000/acarpent/NowcasterTrainingLogs/IN2_epoch=70-val_loss=0.08601.ckpt'
+  accumulate_grad_batches: 1
+  resume_training: #'/scratch/snx3000/acarpent/NowcasterTrainingLogs/IN2_epoch=70-val_loss=0.08601.ckpt'

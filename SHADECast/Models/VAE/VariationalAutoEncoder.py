@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 import numpy as np
-from Blocks.ResBlock3D import ResBlock3D
+from SHADECast.Blocks.ResBlock3D import ResBlock3D
 from utils import sample_from_standard_normal, kl_from_standard_normal
 
 

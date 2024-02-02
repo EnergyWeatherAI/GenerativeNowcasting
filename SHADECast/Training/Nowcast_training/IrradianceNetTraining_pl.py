@@ -130,7 +130,7 @@ def train(config, distributed=True):
 
 
 if __name__ == '__main__':
-    with open('Training/Nowcast_training/IrradianceNettrainingconf.yml',
+    with open('/scratch/snx3000/acarpent/GenerativeNowcasting/SHADECast/Training/Nowcast_training/IrradianceNettrainingconf.yml',
               'r') as o:
         config = load(o, Loader)
 

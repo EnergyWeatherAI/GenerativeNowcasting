@@ -8,7 +8,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
-from Models.UNet.utils import (
+from SHADECast.Models.UNet.utils import (
     checkpoint,
     conv_nd,
     linear,
@@ -17,7 +17,7 @@ from Models.UNet.utils import (
     normalization,
     timestep_embedding,
 )
-from Blocks.AFNO import AFNOCrossAttentionBlock3d
+from SHADECast.Blocks.AFNO import AFNOCrossAttentionBlock3d
 SpatialTransformer = type(None)
 
 

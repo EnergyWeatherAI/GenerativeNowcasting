@@ -5,7 +5,6 @@ from pysteps.verification.detcatscores import det_cat_fct
 from pysteps.verification.probscores import reldiag_init, reldiag_accum
 from pysteps.postprocessing import ensemblestats
 from pysteps import verification
-from mmd_loss import MMD_loss
 import torch
 
 

@@ -56,20 +56,35 @@ def compute_CRPS(yhat_map,
 def compute_fss(yhat_map,
                 y_map,
                 thresh,
-                scale):
-    return fss(yhat_map,
-               y_map,
-               thr=thresh,
-               scale=scale)
+                scale,
+                inverse=None):
+    if inverse is None:
+        return fss(yhat_map,
+                   y_map,
+                   thr=thresh,
+                   scale=scale)
+    else:
+        return fss(inverse-yhat_map,
+                   inverse-y_map,
+                   thr=inverse-thresh,
+                   scale=scale)
+    
 
 
 def compute_CSI(yhat_map,
                 y_map,
-                thresh, ):
-    return det_cat_fct(yhat_map,
-                       y_map,
-                       thr=thresh,
-                       scores='CSI')['CSI']
+                thresh, 
+                inverse=None):
+    if inverse is None:
+        return det_cat_fct(yhat_map,
+                           y_map,
+                           thr=thresh,
+                           scores='CSI')['CSI']
+    else:
+        return det_cat_fct(inverse-yhat_map,
+                           inverse-y_map,
+                           thr=inverse-thresh,
+                           scores='CSI')['CSI']
 
 
 def compute_rmse(yhat_map,
@@ -110,6 +125,7 @@ def compute_ensemble_metrics(yhat,
                              confidence_interval=0.9,
                              scale_lst=(1, 2, 4, 8, 16, 32, 64),
                              threshold_lst=(0.3, 0.6, 0.9),
+                             inverse_lst=[1.2, None, None],
                              mmd_idx=np.arange(0,128,2),
                              mmd=None,
                              rankhist_dict={}):
@@ -147,19 +163,20 @@ def compute_ensemble_metrics(yhat,
 
     if 'csi' in metrics:
         csi_dict = {}
-        for t in threshold_lst:
+        for t,inv, in zip(threshold_lst, inverse_lst):
             csi_lst = []
             for yhat_ in yhat:
                 csi = np.array([compute_CSI(yhat_[j], 
                                             y[j], 
-                                            t) for j in range(len(y))])
+                                            t,
+                                            inverse=inv) for j in range(len(y))])
                 csi_lst.append(csi)
             csi_dict[t] = (np.nanmean(csi_lst, axis=0), np.nanstd(csi_lst, axis=0))
         result_dict['csi'] = csi_dict
     
     if 'fss' in metrics:
         fss_dict = {}
-        for t in threshold_lst:
+        for t,inv, in zip(threshold_lst, inverse_lst):
             fss_dict[t] = {}
             for scale in scale_lst:
                 fss_lst = []
@@ -167,7 +184,8 @@ def compute_ensemble_metrics(yhat,
                     fs_score = np.array([compute_fss(yhat_[j],
                                                      y[j],
                                                      t,
-                                                     scale) for j in range(len(y))])
+                                                     inverse=inv,
+                                                     scale=scale) for j in range(len(y))])
                     fss_lst.append(fs_score)
                 fss_dict[t][scale] = (np.nanmean(fss_lst, axis=0), np.nanstd(fss_lst, axis=0))
         result_dict['fss'] = fss_dict

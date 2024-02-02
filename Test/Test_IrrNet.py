@@ -95,6 +95,9 @@ def main():
             yhat[yhat<-1] = -1
             yhat[yhat>1] = 1
             forecast_dict[t[i]] = np.array(yhat.numpy()).astype(np.float32)
-        save_pkl('/scratch/snx3000/acarpent/Test_Results/{}/{}_{}-forecast_dict_{}.pkl'.format(test_name, model_id, date), forecast_dict)
+        save_pkl('/scratch/snx3000/acarpent/Test_Results/{}/{}-forecast_dict_{}.pkl'.format(test_name, model_id, date), forecast_dict)
     forecast_dict = {}
     print('###################################### SAVED ######################################')
+
+if __name__ == '__main__':
+    main()

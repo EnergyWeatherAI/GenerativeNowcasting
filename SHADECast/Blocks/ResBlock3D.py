@@ -1,3 +1,7 @@
+"""
+From https://github.com/MeteoSwiss/ldcast/blob/master/ldcast/models/blocks/resnet.py
+"""
+
 import torch
 import torch.nn as nn
 from torch.nn.utils.parametrizations import spectral_norm as sn

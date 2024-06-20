@@ -1,3 +1,7 @@
+"""
+From https://github.com/MeteoSwiss/ldcast/blob/master/ldcast/models/blocks/afno.py
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

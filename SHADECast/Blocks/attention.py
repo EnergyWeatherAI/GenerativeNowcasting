@@ -1,5 +1,8 @@
-import math
+"""
+From https://github.com/MeteoSwiss/ldcast/blob/master/ldcast/models/blocks/attention.py
+"""
 
+import math
 import torch
 from torch import nn
 import torch.nn.functional as F

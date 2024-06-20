@@ -1,6 +1,5 @@
 """
 From https://github.com/CompVis/latent-diffusion/main/ldm/models/diffusion/ddpm.py
-Pared down to simplify code.
 
 The original file acknowledges:
 https://github.com/lucidrains/denoising-diffusion-pytorch/blob/7706bdfc6f527f58d33f84b7b522e61e6e3164b3/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
